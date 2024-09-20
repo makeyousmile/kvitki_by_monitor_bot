@@ -21,6 +21,7 @@ func main() {
 
 	status := make(chan Event)
 	link := make(chan string)
-	StartBot(link, status)
+	go StartBot(link, status)
+	scrap(status, link)
 
 }

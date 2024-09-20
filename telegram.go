@@ -24,30 +24,38 @@ func StartBot(link chan string, status chan Event) *tele.Bot {
 		return c.Send(text)
 	})
 	b.Handle("/link", func(c tele.Context) error {
-		link := c.Args()[0]
+		log.Println(c)
 		c.Send("Если есть или появятся билеты в продаже Вам придет сообщение", tele.ModeHTML)
+
 		go func() {
 			for event := range status {
 				message := "Мероприятие: <b>" + strings.Trim(event.title, " ") + "</b>\n"
 				if event.tickets {
 					message = message + "есть билеты на продажу"
 					c.Send(message, tele.ModeHTML)
-					return
+					link <- "stop"
+					break
 				}
 
 			}
 
 		}()
-		go func() {
-			for {
-				scrap(status, link)
-				time.Sleep(10 * time.Second)
-			}
-		}()
+		if len(c.Args()) > 0 {
+			go worker(link, c.Args()[0])
+		}
 
 		return nil
 	})
 
 	b.Start()
 	return b
+}
+func worker(link chan string, url string) {
+	for {
+		if url == "stop" {
+			continue
+		}
+		link <- url
+		time.Sleep(1 * time.Minute)
+	}
 }
