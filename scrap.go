@@ -29,8 +29,6 @@ func scrap(link string) Event {
 	c.OnHTML(".event_short_top_bottom", func(e *colly.HTMLElement) {
 
 		title := e.ChildText(".event_short_title")
-		log.Print(title)
-		log.Print(event.title)
 		if strings.TrimSpace(title) == event.title {
 			text := e.ChildText(".buy_button_text")
 			text = strings.Trim(text, " ")

@@ -14,13 +14,12 @@ type Event struct {
 }
 type Work struct {
 	link   string
-	chatid int64
+	chatID int64
 }
 
 var cfg = &Cfg{}
 
 func init() {
-	cfg.visited = make(map[string]bool)
 	cfg.BotToken = "7291370458:AAHgNvMBp47RiQmO4BzeB2l3sM2rY_DCR8E"
 }
 func main() {
@@ -32,7 +31,7 @@ func main() {
 			for {
 				event := scrap(job.link)
 				if event.tickets {
-					sendMessage(job.chatid, event.title+": Есть билеты!!!")
+					sendMessage(job.chatID, event.title+": Есть билеты!!!")
 					break
 				} else {
 					time.Sleep(10 * time.Second)

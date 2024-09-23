@@ -19,7 +19,7 @@ func StartBot(work chan Work) {
 	}
 
 	b.Handle("/start", func(c tele.Context) error {
-		text := "kvitkiby_monitor_bot starts"
+		text := "kvitki_by_monitor_bot starts"
 		return c.Send(text)
 	})
 	b.Handle("/link", func(c tele.Context) error {
@@ -30,7 +30,7 @@ func StartBot(work chan Work) {
 
 			job := Work{
 				link:   c.Args()[0],
-				chatid: c.Chat().ID,
+				chatID: c.Chat().ID,
 			}
 			work <- job
 		}
