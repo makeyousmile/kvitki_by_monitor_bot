@@ -2,13 +2,12 @@ package main
 
 import (
 	"log"
-	"strings"
 	"time"
 
 	tele "gopkg.in/telebot.v3"
 )
 
-func StartBot(link chan string, status chan Event) *tele.Bot {
+func StartBot(work chan Work) {
 	pref := tele.Settings{
 		Token:  cfg.BotToken,
 		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
@@ -24,38 +23,52 @@ func StartBot(link chan string, status chan Event) *tele.Bot {
 		return c.Send(text)
 	})
 	b.Handle("/link", func(c tele.Context) error {
-		log.Println(c)
-		c.Send("Если есть или появятся билеты в продаже Вам придет сообщение", tele.ModeHTML)
+		log.Println(c.Chat().ID)
+		if len(c.Args()) == 0 {
+			return c.Send("Введите ссылку", tele.ModeHTML)
+		} else {
 
-		go func() {
-			for event := range status {
-				message := "Мероприятие: <b>" + strings.Trim(event.title, " ") + "</b>\n"
-				if event.tickets {
-					message = message + "есть билеты на продажу"
-					c.Send(message, tele.ModeHTML)
-					link <- "stop"
-					break
-				}
-
+			job := Work{
+				link:   c.Args()[0],
+				chatid: c.Chat().ID,
 			}
-
-		}()
-		if len(c.Args()) > 0 {
-			go worker(link, c.Args()[0])
+			work <- job
 		}
 
-		return nil
+		return c.Send("Если есть или появятся билеты в продаже Вам придет сообщение", tele.ModeHTML)
 	})
 
 	b.Start()
-	return b
+
 }
-func worker(link chan string, url string) {
-	for {
-		if url == "stop" {
-			continue
-		}
-		link <- url
-		time.Sleep(1 * time.Minute)
+
+func sendMessage(chatID int64, message string) {
+
+	botToken := cfg.BotToken
+
+	// Создаем настройки для бота
+	pref := tele.Settings{
+		Token:  botToken,
+		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
 	}
+
+	// Инициализируем бота
+	bot, err := tele.NewBot(pref)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	// ID чата или пользователя, которому отправляем сообщение
+	recipient := &tele.User{ID: chatID}
+
+	// Отправляем сообщение
+
+	_, err = bot.Send(recipient, message)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	log.Println("Message sent successfully!")
 }

@@ -1,5 +1,7 @@
 package main
 
+import "time"
+
 type Cfg struct {
 	BotToken string
 	visited  map[string]bool
@@ -10,6 +12,10 @@ type Event struct {
 	tickets bool
 	link    string
 }
+type Work struct {
+	link   string
+	chatid int64
+}
 
 var cfg = &Cfg{}
 
@@ -19,9 +25,19 @@ func init() {
 }
 func main() {
 
-	status := make(chan Event)
-	link := make(chan string)
-	go StartBot(link, status)
-	scrap(status, link)
-
+	work := make(chan Work)
+	go StartBot(work)
+	for job := range work {
+		go func() {
+			for {
+				event := scrap(job.link)
+				if event.tickets {
+					sendMessage(job.chatid, event.title+": Есть билеты!!!")
+					break
+				} else {
+					time.Sleep(10 * time.Second)
+				}
+			}
+		}()
+	}
 }

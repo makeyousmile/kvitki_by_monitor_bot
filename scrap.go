@@ -5,44 +5,56 @@ import (
 	"github.com/gocolly/colly/v2"
 	"log"
 	"strings"
+	"sync"
 )
 
-func scrap(status chan Event, link chan string) {
+func scrap(link string) Event {
+	var wg sync.WaitGroup
+	event := Event{}
+	// Instantiate default collector
+	c := colly.NewCollector()
 
-	for url := range link {
-		if url == "stop" {
-			continue
+	// On every a element which has href attribute call callback
+	c.OnHTML(".concert_details_title", func(e *colly.HTMLElement) {
+		if e.Text != "" {
+			event.title = strings.TrimSpace(e.Text)
 		}
-		event := Event{}
-		// Instantiate default collector
-		c := colly.NewCollector()
+	})
+	c.OnHTML(".show_details_title", func(e *colly.HTMLElement) {
+		if e.Text != "" {
+			event.title = strings.TrimSpace(e.Text)
+		}
+	})
 
-		// On every a element which has href attribute call callback
-		c.OnHTML(".event_short_title", func(e *colly.HTMLElement) {
-			log.Println(e.Text)
-			event.title = e.Text
-		})
-		c.OnHTML(".buy_button_text", func(e *colly.HTMLElement) {
-			log.Println(e.Text)
-			text := strings.Trim(e.Text, " ")
+	c.OnHTML(".event_short_top_bottom", func(e *colly.HTMLElement) {
+
+		title := e.ChildText(".event_short_title")
+		log.Print(title)
+		log.Print(event.title)
+		if strings.TrimSpace(title) == event.title {
+			text := e.ChildText(".buy_button_text")
+			text = strings.Trim(text, " ")
+
 			if text == "Купить" {
 				event.tickets = true
-			} else {
-				event.tickets = false
 			}
-			event.status = event.status + e.Text + "\n"
-		})
-		c.OnScraped(func(_ *colly.Response) {
-			status <- event
-		})
+		}
 
-		// Before making a request print "Visiting ..."
-		c.OnRequest(func(r *colly.Request) {
-			event.link = r.URL.String()
-			fmt.Println("Visiting", r.URL.String())
-		})
+	})
+	c.OnScraped(func(_ *colly.Response) {
 
-		c.Visit(url)
+	})
+
+	// Before making a request print "Visiting ..."
+	c.OnRequest(func(r *colly.Request) {
+		event.link = r.URL.String()
+		fmt.Println("Visiting", r.URL.String())
+	})
+
+	err := c.Visit(link)
+	if err != nil {
+		log.Print(err)
 	}
-
+	wg.Wait()
+	return event
 }
