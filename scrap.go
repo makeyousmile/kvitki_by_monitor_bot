@@ -10,6 +10,7 @@ import (
 
 func scrap(link string) Event {
 	var wg sync.WaitGroup
+	var dates []string
 	event := Event{}
 	// Instantiate default collector
 	c := colly.NewCollector()
@@ -25,8 +26,14 @@ func scrap(link string) Event {
 			event.title = strings.TrimSpace(e.Text)
 		}
 	})
+	c.OnHTML(".concert_details_spec_content", func(e *colly.HTMLElement) {
+		if e.Text != "" {
+			log.Println(e.Text)
+			dates = append(dates, strings.TrimSpace(e.Text))
+		}
+	})
 
-	c.OnHTML(".event_short_top_bottom", func(e *colly.HTMLElement) {
+	c.OnHTML(".event_short", func(e *colly.HTMLElement) {
 
 		title := e.ChildText(".event_short_title")
 		if strings.TrimSpace(title) == event.title {
@@ -34,6 +41,8 @@ func scrap(link string) Event {
 			text = strings.Trim(text, " ")
 
 			if text == "Купить" {
+				date := e.ChildText(".mobile_layout_list_mobile_hidden")
+				dates = append(dates, date)
 				event.tickets = true
 			}
 		}
@@ -45,7 +54,7 @@ func scrap(link string) Event {
 
 	// Before making a request print "Visiting ..."
 	c.OnRequest(func(r *colly.Request) {
-		event.link = r.URL.String()
+
 		fmt.Println("Visiting", r.URL.String())
 	})
 
@@ -54,5 +63,6 @@ func scrap(link string) Event {
 		log.Print(err)
 	}
 	wg.Wait()
+	event.dates = dates
 	return event
 }

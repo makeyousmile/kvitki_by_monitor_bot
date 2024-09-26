@@ -4,6 +4,7 @@ go 1.23
 
 require (
 	github.com/gocolly/colly/v2 v2.1.0
+	github.com/mattn/go-sqlite3 v1.14.23
 	gopkg.in/telebot.v3 v3.3.8
 )
 

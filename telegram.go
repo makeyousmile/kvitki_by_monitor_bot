@@ -64,7 +64,7 @@ func sendMessage(chatID int64, message string) {
 
 	// Отправляем сообщение
 
-	_, err = bot.Send(recipient, message)
+	_, err = bot.Send(recipient, message, tele.ModeHTML)
 	if err != nil {
 		log.Println(err)
 		return
