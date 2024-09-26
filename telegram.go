@@ -30,7 +30,7 @@ func StartBot(work chan Work) {
 
 			job := Work{
 				link:   c.Args()[0],
-				chatID: c.Chat().ID,
+				ChatID: c.Chat().ID,
 			}
 			work <- job
 		}

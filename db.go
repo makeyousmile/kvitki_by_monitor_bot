@@ -16,10 +16,6 @@ type DB struct {
 	stmt   *sql.Stmt
 	buffer []Phone
 }
-type Work1 struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
-}
 
 func NewDB() DB {
 	db := DB{}
@@ -30,17 +26,42 @@ func NewDB() DB {
 	}
 	return db
 }
-
-func (db *DB) InsertWork(work Work) error {
-	stmt, err := db.sql.Prepare("INSERT INTO work(link, chat_id) values(?,?)")
+func (db *DB) GetWork() []Work {
+	rows, err := db.sql.Query("SELECT chat_id, link FROM work")
 	if err != nil {
 		log.Print(err)
 	}
-	res, err := stmt.Exec(work.chatID, work.link)
+	defer rows.Close()
+	var works []Work
+	for rows.Next() {
+		var work Work
+
+		rows.Scan(&work.ChatID, &work.link)
+		works = append(works, work)
+	}
+	return works
+}
+func (db *DB) InsertWork(work Work) error {
+	stmt, err := db.sql.Prepare("INSERT INTO work(chat_id, link ) values(?,?)")
 	if err != nil {
-		log.Print(err)
+		return err
+	}
+	res, err := stmt.Exec(work.ChatID, work.link)
+	if err != nil {
+		return err
 	}
 	id, err := res.LastInsertId()
 	log.Println(id)
+	return err
+}
+func (db *DB) RemoveWork(work Work) error {
+	stmt, err := db.sql.Prepare("DELETE FROM work WHERE chat_id=? AND link=?")
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(work.ChatID, work.link)
+	if err != nil {
+		return err
+	}
 	return nil
 }

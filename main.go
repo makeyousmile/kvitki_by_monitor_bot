@@ -1,6 +1,9 @@
 package main
 
-import "time"
+import (
+	"log"
+	"time"
+)
 
 type Cfg struct {
 	BotToken string
@@ -12,7 +15,7 @@ type Event struct {
 }
 type Work struct {
 	link   string `json:"link"`
-	chatID int64  `json:"chat_id"`
+	ChatID int64  `json:"chat_id"`
 }
 
 var cfg = &Cfg{}
@@ -22,11 +25,14 @@ func init() {
 }
 func main() {
 	db := NewDB()
-
 	work := make(chan Work)
+	go startWorkFromDB(db, work)
 	go StartBot(work)
 	for job := range work {
-		db.InsertWork(job)
+		err := db.InsertWork(job)
+		if err != nil {
+			log.Print(err)
+		}
 		go func() {
 			for {
 				event := scrap(job.link)
@@ -35,12 +41,19 @@ func main() {
 					for _, t := range event.dates {
 						text += t + ", "
 					}
-					sendMessage(job.chatID, "<b>"+event.title+"</b>"+". Есть билеты на сдедующие даты: <b>"+text+"</b> ")
+					sendMessage(job.ChatID, "<b>"+event.title+"</b>"+". Есть билеты на сдедующие даты: <b>"+text+"</b> ")
+					db.RemoveWork(job)
 					break
 				} else {
 					time.Sleep(10 * time.Second)
 				}
 			}
 		}()
+	}
+}
+func startWorkFromDB(db DB, work chan Work) {
+	works := db.GetWork()
+	for _, w := range works {
+		work <- w
 	}
 }
